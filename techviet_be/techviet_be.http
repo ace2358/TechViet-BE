@@ -1,0 +1,208 @@
+@baseUrl = http://127.0.0.1:53011
+@adminUsername = admin_demo
+@adminEmail = admin_demo@techviet.local
+@adminPassword = 123456
+@userUsername = user_demo
+@userEmail = user_demo@techviet.local
+@userPassword = 123456
+@productId = 00000000-0000-0000-0000-000000000000
+@specId = 00000000-0000-0000-0000-000000000000
+@orderId = 00000000-0000-0000-0000-000000000000
+@imagePath = C:/temp/demo.jpg
+
+### 0) Health check
+GET {{baseUrl}}/swagger/v1/swagger.json
+Accept: application/json
+
+### 1) Register admin (currently open endpoint)
+POST {{baseUrl}}/api/auth/register-admin
+Content-Type: application/json
+
+{
+	"username": "{{adminUsername}}",
+	"fullname": "Admin Demo",
+	"email": "{{adminEmail}}",
+	"phone": "0900000001",
+	"address": "HCM City",
+	"password": "{{adminPassword}}"
+}
+
+### 2) Login admin
+# @name adminLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+	"usernameOrEmail": "{{adminUsername}}",
+	"password": "{{adminPassword}}"
+}
+
+> {%
+client.global.set("adminToken", response.body.data.token);
+%}
+
+### 3) Register normal user
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"username": "{{userUsername}}",
+	"fullname": "User Demo",
+	"email": "{{userEmail}}",
+	"phone": "0900000002",
+	"address": "Da Nang",
+	"password": "{{userPassword}}"
+}
+
+### 4) Login normal user
+# @name userLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+	"usernameOrEmail": "{{userEmail}}",
+	"password": "{{userPassword}}"
+}
+
+> {%
+client.global.set("userToken", response.body.data.token);
+%}
+
+### 5) Admin create product
+# @name createProduct
+POST {{baseUrl}}/api/products
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+	"name": "Laptop TechViet Pro 14",
+	"brand": "TechViet",
+	"category": "Laptop",
+	"description": "Demo product",
+	"price": 25990000,
+	"originalPrice": 27990000,
+	"discountPercent": 7.15,
+	"stockQty": 50,
+	"isActive": true,
+	"images": [],
+	"specs": []
+}
+
+> {%
+client.global.set("productId", response.body.data.id);
+%}
+
+### 6) Admin create product spec
+# @name createSpec
+POST {{baseUrl}}/api/products/{{productId}}/specs
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+	"specLabel": "CPU",
+	"specValue": "Intel Core Ultra 7",
+	"sortOrder": 1
+}
+
+> {%
+client.global.set("specId", response.body.data.id);
+%}
+
+### 7) Admin update product spec
+PUT {{baseUrl}}/api/products/{{productId}}/specs/{{specId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+	"specLabel": "RAM",
+	"specValue": "32GB",
+	"sortOrder": 2
+}
+
+### 8) Admin upload image to product (endpoint requires productId)
+POST {{baseUrl}}/api/upload
+Authorization: Bearer {{adminToken}}
+Content-Type: multipart/form-data; boundary=TechVietBoundary
+
+--TechVietBoundary
+Content-Disposition: form-data; name="productId"
+
+{{productId}}
+--TechVietBoundary
+Content-Disposition: form-data; name="sortOrder"
+
+0
+--TechVietBoundary
+Content-Disposition: form-data; name="file"; filename="demo.jpg"
+Content-Type: image/jpeg
+
+< {{imagePath}}
+--TechVietBoundary--
+
+### 9) Public list products with filters + pagination
+GET {{baseUrl}}/api/products?category=Laptop&search=TechViet&min_price=1000000&max_price=50000000&sort=price_desc&pageNumber=1&pageSize=10
+Accept: application/json
+
+### 10) User profile
+GET {{baseUrl}}/api/auth/profile
+Authorization: Bearer {{userToken}}
+Accept: application/json
+
+### 11) User add product to cart
+POST {{baseUrl}}/api/cart/items
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+	"productId": "{{productId}}",
+	"quantity": 1,
+	"variantInfo": "{\"color\":\"black\",\"storage\":\"1TB\"}"
+}
+
+### 12) User get cart
+GET {{baseUrl}}/api/cart
+Authorization: Bearer {{userToken}}
+Accept: application/json
+
+### 13) User create order from cart
+# @name createOrder
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+	"fullname": "Demo User",
+	"phone": "0900000000",
+	"address": "HCM City",
+	"note": "Please call before delivery",
+	"paymentMethod": "VNPAY",
+	"shippingFee": 30000
+}
+
+> {%
+client.global.set("orderId", response.body.data.orderId);
+%}
+
+### 14) User list own orders
+GET {{baseUrl}}/api/orders
+Authorization: Bearer {{userToken}}
+Accept: application/json
+
+### 15) Create VNPAY payment URL
+POST {{baseUrl}}/api/payment/vnpay/create
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+	"orderId": "{{orderId}}"
+}
+
+### 16) (Optional) Delete spec
+DELETE {{baseUrl}}/api/products/{{productId}}/specs/{{specId}}
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### 17) (Optional) Soft-delete product
+DELETE {{baseUrl}}/api/products/{{productId}}
+Authorization: Bearer {{adminToken}}
+Accept: application/json

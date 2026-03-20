@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "TechViet API (Project)",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/techviet_be/techviet_be.csproj"
+    },
+    {
+      "name": "TechViet API (.NET)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-techviet-api",
+      "program": "${workspaceFolder}/techviet_be/bin/Debug/net9.0/techviet_be.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/techviet_be",
+      "stopAtEntry": false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      }
+    }
+  ]
+}

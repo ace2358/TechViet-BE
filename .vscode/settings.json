@@ -1,0 +1,4 @@
+{
+    "dotnet.defaultSolution": "techviet_be.sln",
+    "dotnet.defaultProject": "techviet_be/techviet_be.csproj"
+}
